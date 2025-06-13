@@ -6,7 +6,7 @@ use serde_json::to_writer_pretty;  // or `to_writer` for compact output
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = args().collect();
     if args.len() < 2 {
-        panic!("Usage {}", args[0]);
+        panic!("Usage {} <WASM file>", args[0]);
     }
     let wasm_bytes = std::fs::read(args[1].clone())?;    
     let buf = Wasm2Wat::new().convert(&wasm_bytes)?;
