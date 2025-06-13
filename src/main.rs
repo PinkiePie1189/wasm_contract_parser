@@ -12,14 +12,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let buf = Wasm2Wat::new().convert(&wasm_bytes)?;
     let s = String::from_utf8(buf.as_ref().to_vec()).unwrap();
 
-    let mut exports: HashMap<String, String> = HashMap::new();
+    let mut exports: Vec<(String, String)> = Vec::new();
     {
         let export_regex = r#"\(export "(?P<name>\w+)" \(func (?P<id>\d+)\)"#;
         let regex = Regex::new(export_regex)?;
         let caps = regex.captures_iter(&s);
 
         for cap in caps {
-            exports.insert(cap["id"].to_string(), cap["name"].to_string());
+            exports.push((cap["id"].to_string(), cap["name"].to_string()));
         }
     }
 
@@ -35,17 +35,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             match func_header_regex.captures_iter(slice).last() {
                 Some(cap) => {
                     let stub_id = &cap["id"];
-                    let ids = exports.keys().into_iter();
-                    ids.for_each(|id| {
+                    exports.iter().for_each(|(id, name)| {
                         let func_regex = format!(r"(?s)\(func \(;{};\) \(type \d+\).*?i32.const (?P<arity>\d+)\s*call {}", id, stub_id);
                         let func_regex_compiled = Regex::new(&func_regex).unwrap();
                         if let Some(cap_func) = func_regex_compiled.captures(&s) {
                             let arity = &cap_func["arity"];
 
-                            partial_abi.insert(exports[id].clone(), arity.parse::<i32>().unwrap());
-                            println!("Func name: {} id: {} arity {}", exports[id], id, arity);
+                            partial_abi.insert(name.clone(), arity.parse::<i32>().unwrap());
+                            println!("Func name: {} id: {} arity {}", name, id, arity);
                         } else {
-                            eprintln!("Can't find checkNumArguments call in func  name: {} id: {}", exports[id], id);
+                            eprintln!("Can't find checkNumArguments call in func  name: {} id: {}", name, id);
                         }
                     });
 
